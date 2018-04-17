@@ -81,24 +81,24 @@ int main(int argc, const char **argv)
     }
     cfg.csv = parser.count("csv");
     if (parser.count("payload"))
-        cfg.datasize = parser.retrieve<int>("payload");
+        cfg.datasize = atoi(parser.retrieve<std::string>("payload").c_str());
     if (parser.count("keySize"))
-        cfg.keysize = parser.retrieve<int>("keySize");
+        cfg.keysize = atoi(parser.retrieve<std::string>("keySize").c_str());
     if (parser.count("host"))
       {
         cfg.hostip = parser.retrieve<std::string>("host");
     	printf("host = %s\n", cfg.hostip.c_str());
       }
     if (parser.count("port"))
-        cfg.hostport = parser.retrieve<int>("port");
+        cfg.hostport = atoi(parser.retrieve<std::string>("port").c_str());
     if (parser.count("requests"))
-        cfg.requests = parser.retrieve<int>("requests");
+        cfg.requests = atoi(parser.retrieve<std::string>("requests").c_str());
     if (parser.count("tests"))
         cfg.tests = parser.retrieve<std::vector<std::string>>("tests");
     if (parser.count("clients"))
-        cfg.numclients = parser.retrieve<int>("clients");
+        cfg.numclients = atoi(parser.retrieve<std::string>("clients").c_str());
     if (parser.count("rank"))
-        cfg.rank = parser.retrieve<int>("rank");
+        cfg.rank = atoi(parser.retrieve<std::string>("rank").c_str());
 
     cfg.outputFile = parser.retrieve<std::string>("output");
     //first, rendezvous.
