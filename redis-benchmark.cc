@@ -35,6 +35,7 @@ struct config
     std::string outputFile;
     uint64_t start;
     long long totlatency;
+    bool gdb = false;
     std::vector<uint64_t> latencies;
 };
 
@@ -51,6 +52,7 @@ static uint64_t ustime(void)
 int main(int argc, const char **argv)
 {
     ArgumentParser parser;
+    parser.addArgument("--gdb", 0, true);
     parser.addArgument("--csv", 0, true);
     parser.addArgument("--payload", 1, true);
     parser.addArgument("--keySize", 1, true);
@@ -67,23 +69,36 @@ int main(int argc, const char **argv)
     parser.parse(argc, argv);
     config cfg;
     // if we get here, the configuration is valid
-    cfg.csv = parser.exists("--csv");
-    if (parser.exists("--payload"))
-        cfg.datasize = parser.retrieve<int>("--payload");
-    if (parser.exists("--keySize"))
-        cfg.keysize = parser.retrieve<int>("--keySize");
-    if (parser.exists("--host"))
-        cfg.hostip = parser.retrieve<std::string>("--host");
-    if (parser.exists("--port"))
-        cfg.hostport = parser.retrieve<int>("--port");
-    if (parser.exists("--requests"))
-        cfg.requests = parser.retrieve<int>("--requests");
-    if (parser.exists("--tests"))
-        cfg.tests = parser.retrieve<std::vector<std::string>>("--tests");
-    if (parser.exists("--clients"))
-        cfg.numclients = parser.retrieve<int>("--clients");
-    if (parser.exists("--rank"))
-        cfg.rank = parser.retrieve<int>("--rank");
+    cfg.gdb = parser.count("gdb");
+    if(cfg.gdb == true)
+    {
+        int cntr = 20;
+        while(cntr-- > 0)
+        {
+            printf("Waiting on GDB attach...\n", cntr);
+            sleep(1);
+        }
+    }
+    cfg.csv = parser.count("csv");
+    if (parser.count("payload"))
+        cfg.datasize = parser.retrieve<int>("payload");
+    if (parser.count("keySize"))
+        cfg.keysize = parser.retrieve<int>("keySize");
+    if (parser.count("host"))
+      {
+        cfg.hostip = parser.retrieve<std::string>("host");
+    	printf("host = %s\n", cfg.hostip.c_str());
+      }
+    if (parser.count("port"))
+        cfg.hostport = parser.retrieve<int>("port");
+    if (parser.count("requests"))
+        cfg.requests = parser.retrieve<int>("requests");
+    if (parser.count("tests"))
+        cfg.tests = parser.retrieve<std::vector<std::string>>("tests");
+    if (parser.count("clients"))
+        cfg.numclients = parser.retrieve<int>("clients");
+    if (parser.count("rank"))
+        cfg.rank = parser.retrieve<int>("rank");
 
     cfg.outputFile = parser.retrieve<std::string>("output");
     //first, rendezvous.
