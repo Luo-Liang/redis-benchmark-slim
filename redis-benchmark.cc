@@ -13,7 +13,7 @@
 #define REDIS_CHECK_ERROR(prep, ctx, cfg)                    \
     do                                                       \
     {                                                        \
-        if (prep == NULL)                                    \
+        if (prep == NULL || ctx->err)                        \
         {                                                    \
             printf("[%d]Error %s\n", cfg.rank, ctx->errstr); \
             return -1;                                       \
@@ -29,7 +29,7 @@ struct config
     int requests = 100000;
     int keysize = 1;
     int datasize = 1;
-    std::vector<std::string> tests = {"get"};
+    std::vector<std::string> tests = {std::string("get")};
     bool csv = false;
     int rank = 0;
     std::string outputFile;
@@ -67,15 +67,24 @@ int main(int argc, const char **argv)
     parser.parse(argc, argv);
     config cfg;
     // if we get here, the configuration is valid
-    cfg.csv = parser.retrieve<bool>("csv");
-    cfg.datasize = parser.retrieve<int>("payload");
-    cfg.keysize = parser.retrieve<int>("keySize");
-    cfg.hostip = parser.retrieve<std::string>("host");
-    cfg.hostport = parser.retrieve<int>("port");
-    cfg.requests = parser.retrieve<int>("requests");
-    cfg.tests = parser.retrieve<std::vector<std::string>>("tests");
-    cfg.numclients = parser.retrieve<int>("clients");
-    cfg.rank = parser.retrieve<int>("rank");
+    cfg.csv = parser.exists("--csv");
+    if (parser.exists("--payload"))
+        cfg.datasize = parser.retrieve<int>("--payload");
+    if (parser.exists("--keySize"))
+        cfg.keysize = parser.retrieve<int>("--keySize");
+    if (parser.exists("--host"))
+        cfg.hostip = parser.retrieve<std::string>("--host");
+    if (parser.exists("--port"))
+        cfg.hostport = parser.retrieve<int>("--port");
+    if (parser.exists("--requests"))
+        cfg.requests = parser.retrieve<int>("--requests");
+    if (parser.exists("--tests"))
+        cfg.tests = parser.retrieve<std::vector<std::string>>("--tests");
+    if (parser.exists("--clients"))
+        cfg.numclients = parser.retrieve<int>("--clients");
+    if (parser.exists("--rank"))
+        cfg.rank = parser.retrieve<int>("--rank");
+
     cfg.outputFile = parser.retrieve<std::string>("output");
     //first, rendezvous.
     redisContext *c = redisConnect(cfg.hostip.c_str(), cfg.hostport);
@@ -91,11 +100,14 @@ int main(int argc, const char **argv)
             printf("Can't allocate redis context\n");
         }
     }
+    {
+        auto pRep = (redisReply *)redisCommand(c, "INCR R");
+        REDIS_CHECK_ERROR(pRep, c, cfg);
+    }
     while (true)
     {
-        auto pRep = (redisReply *)redisCommand(c, "INC R");
-        REDIS_CHECK_ERROR(pRep, c, cfg);
-        if (pRep->integer == cfg.numclients)
+        auto pRep = (redisReply *)redisCommand(c, "GET R");
+        if (atoi(pRep->str) == cfg.numclients)
         {
             break;
         }
@@ -115,7 +127,7 @@ int main(int argc, const char **argv)
                 REDIS_CHECK_ERROR(pRep, c, cfg);
 
                 //how many do i have?
-                if (cfg.latencies.size() < cfg.requests && pRep->integer == cfg.numclients)
+                if (cfg.latencies.size() < cfg.requests && atoi(pRep->str) == cfg.numclients)
                 {
                     cfg.latencies.push_back(end - start);
                 }
@@ -151,14 +163,17 @@ int main(int argc, const char **argv)
     auto reqpersec = 1000000.0 * cfg.latencies.size() / duration;
     std::ofstream output;
     output.open(cfg.outputFile);
-    printf("%f\n", reqpersec);
+    //printf("%f\n", reqpersec);
+    output << reqpersec << "\n";
     for (int percent = 0; percent <= 100; percent += 10)
     {
         int idx = (int)(percent * cfg.latencies.size() / 100.0);
         if (idx >= cfg.latencies.size())
             idx = cfg.latencies.size() - 1;
+        if (idx < 0)
+            continue;
         float lat = cfg.latencies[idx];
-        output << lat <<"\n";
+        output << lat << "\n";
         //printf("%f\n", lat);
     }
     //output << "Writing this to a file.\n";
