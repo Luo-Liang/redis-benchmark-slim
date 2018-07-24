@@ -75,7 +75,7 @@ int main(int argc, const char **argv)
         int cntr = 20;
         while(cntr-- > 0)
         {
-            printf("Waiting on GDB attach...\n", cntr);
+            printf("Waiting on GDB attach...%ds\n", cntr);
             sleep(1);
         }
     }
