@@ -3,7 +3,11 @@
 #include <vector>
 #include <stdint.h>
 #include "argparse.h"
+#ifndef USE_ANS_DPDK
 #include <hiredis/hiredis.h>
+#else
+#include "/home/ubuntu/dpdk-redis/deps/hiredis/hiredis.h"
+#endif
 #include <time.h>
 #include <sys/time.h>
 #include <cstdlib>
